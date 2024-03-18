@@ -12,7 +12,7 @@ private:
     int ghistoryBits; // Number of bits used for Global History, also used for F
     int pcIndexBits;  // Number of bits used for PC index
     // self defined:
-    long long ghistoryRegister;
+    uint64_t ghistoryRegister;
     uint64_t gMask;
     uint32_t pcMask;
     int threshold;

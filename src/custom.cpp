@@ -29,7 +29,7 @@ CustomPredictor::CustomPredictor(int ghb, int pcb, int bpt, int vbs) : Predictor
         gMask |= 1;
     }
     if (verbose == 1) {
-        std::cout<<std::hex<<gMask<<std::endl; //debug: print the ghrMask value
+        std::cout<<std::hex<<gMask<<std::endl; //debug: print the gMask value
     }
     pcMask = 0;
     for (int i = 0; i < pcIndexBits; i ++) {
@@ -37,7 +37,7 @@ CustomPredictor::CustomPredictor(int ghb, int pcb, int bpt, int vbs) : Predictor
         pcMask |= 1;
     }
     if (verbose == 1) {
-        std::cout<<std::hex<<pcMask<<std::endl; //debug: print the ghrMask value
+        std::cout<<std::hex<<pcMask<<std::endl; //debug: print the pcMask value
     }
     threshold = 0;
 }

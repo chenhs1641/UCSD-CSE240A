@@ -16,7 +16,7 @@ GsharePredictor::GsharePredictor(int ghb, int bpt, int vbs) : Predictor(bpt, vbs
         gMask |= 1;
     }
     if (verbose == 1) {
-        std::cout<<std::hex<<gMask<<std::endl; //debug: print the ghrMask value
+        std::cout<<std::hex<<gMask<<std::endl; //debug: print the gMask value
     }
     globalPredictionTable = new uint8_t[1 << ghistoryBits];
     memset(globalPredictionTable, WN, 1 << ghistoryBits);

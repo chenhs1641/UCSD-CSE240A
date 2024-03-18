@@ -18,7 +18,7 @@ TournamentPredictor::TournamentPredictor(int ghb, int lhb, int pcb, int bpt, int
         gMask |= 1;
     }
     if (verbose == 1) {
-        std::cout<<std::hex<<gMask<<std::endl; //debug: print the ghrMask value
+        std::cout<<std::hex<<gMask<<std::endl; //debug: print the gMask value
     }
     lMask = 0;
     for (int i = 0; i < lhistoryBits; i ++) {
@@ -26,7 +26,7 @@ TournamentPredictor::TournamentPredictor(int ghb, int lhb, int pcb, int bpt, int
         lMask |= 1;
     }
     if (verbose == 1) {
-        std::cout<<std::hex<<lMask<<std::endl; //debug: print the ghrMask value
+        std::cout<<std::hex<<lMask<<std::endl; //debug: print the lMask value
     }
     pcMask = 0;
     for (int i = 0; i < pcIndexBits; i ++) {
@@ -34,7 +34,7 @@ TournamentPredictor::TournamentPredictor(int ghb, int lhb, int pcb, int bpt, int
         pcMask |= 1;
     }
     if (verbose == 1) {
-        std::cout<<std::hex<<pcMask<<std::endl; //debug: print the ghrMask value
+        std::cout<<std::hex<<pcMask<<std::endl; //debug: print the pcMask value
     }
     choicePredictionTable = new uint8_t[1 << ghistoryBits];
     memset(choicePredictionTable, WEAK_GLOBAL, 1 << ghistoryBits);
