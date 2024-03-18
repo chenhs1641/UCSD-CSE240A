@@ -18,16 +18,22 @@ GsharePredictor::GsharePredictor(int ghb, int bpt, int vbs) : Predictor(bpt, vbs
     if (verbose == 1) {
         std::cout<<std::hex<<gMask<<std::endl; //debug: print the ghrMask value
     }
+    globalPredictionTable = new uint8_t[1 << ghistoryBits];
+    memset(globalPredictionTable, WN, 1 << ghistoryBits);
 }
 
 uint8_t GsharePredictor::make_prediction(uint32_t pc) {
     uint32_t gIndex = (ghistoryRegister ^ pc) & gMask;
-    return globalBranchHistoryTable[gIndex];
+    return globalPredictionTable[gIndex] > WN;
 }
 
 void GsharePredictor::train_predictor(uint32_t pc, uint8_t outcome) {
     uint32_t gIndex = (ghistoryRegister ^ pc) & gMask;
-    globalBranchHistoryTable[gIndex] = outcome;
+    if (outcome == TAKEN && globalPredictionTable[gIndex] < ST) {
+        globalPredictionTable[gIndex] ++;
+    } else if (outcome == NOTTAKEN && globalPredictionTable[gIndex] > SN) {
+        globalPredictionTable[gIndex] --;
+    }
     ghistoryRegister <<= 1;
     ghistoryRegister &= gMask;
     ghistoryRegister ^= outcome & 1;

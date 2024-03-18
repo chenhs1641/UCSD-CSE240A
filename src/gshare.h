@@ -10,7 +10,7 @@ private:
     // self defined:
     int ghistoryRegister;
     uint32_t gMask;
-    std::unordered_map<uint32_t, uint8_t> globalBranchHistoryTable;
+    uint8_t* globalPredictionTable;
 public:
     GsharePredictor(int ghb, int bpt, int vbs);
     uint8_t make_prediction(uint32_t pc) override;

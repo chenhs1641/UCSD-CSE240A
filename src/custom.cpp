@@ -7,7 +7,7 @@
 #include <bits/stdc++.h>
 #include <iostream>
 
-int CustomPredictor::vec_mul(std::vector<int> vecF) {
+int CustomPredictor::vec_mul(int* vecF) {
     int sum = vecF[ghistoryBits];
     for (int i = 0; i < ghistoryBits; i ++) {
         if ((ghistoryRegister >> i & 1) == 1) {
@@ -47,7 +47,7 @@ uint8_t CustomPredictor::make_prediction(uint32_t pc) {
     if (functionCoefficients.find(fIndex) == functionCoefficients.end()) {
         return NOTTAKEN;
     }
-    std::vector<int> vecF = functionCoefficients[fIndex];
+    int* vecF = functionCoefficients[fIndex];
     int mul = vec_mul(vecF);
     if (mul > threshold) {
         return TAKEN;
@@ -59,7 +59,8 @@ uint8_t CustomPredictor::make_prediction(uint32_t pc) {
 void CustomPredictor::train_predictor(uint32_t pc, uint8_t outcome) {
     uint32_t fIndex = pc & pcMask;
     if (functionCoefficients.find(fIndex) == functionCoefficients.end()) {
-        functionCoefficients[fIndex] = std::vector<int>(ghistoryBits + 1, 0);
+        functionCoefficients[fIndex] = new int[ghistoryBits + 1];
+        memset(functionCoefficients[fIndex], 0, (ghistoryBits + 1) * sizeof(int));
     }
     uint8_t pred = make_prediction(pc);
     if (outcome != pred) {

@@ -36,33 +36,57 @@ TournamentPredictor::TournamentPredictor(int ghb, int lhb, int pcb, int bpt, int
     if (verbose == 1) {
         std::cout<<std::hex<<pcMask<<std::endl; //debug: print the ghrMask value
     }
+    choicePredictionTable = new uint8_t[1 << ghistoryBits];
+    memset(choicePredictionTable, WEAK_GLOBAL, 1 << ghistoryBits);
+    globalPredictionTable = new uint8_t[1 << ghistoryBits];
+    memset(globalPredictionTable, WN, 1 << ghistoryBits);
+    localBranchHistoryTable = new uint32_t[1 << pcIndexBits];
+    memset(localBranchHistoryTable, 0, (1 << pcIndexBits) * sizeof(uint32_t));
+    localPredictionTable = new uint8_t[1 << lhistoryBits];
+    memset(localPredictionTable, WN, 1 << lhistoryBits);
 }
 
 uint8_t TournamentPredictor::make_prediction(uint32_t pc) {
-    uint32_t gIndex = (ghistoryRegister ^ pc) & gMask;
-    uint32_t lIndex = pc & lMask;
+    uint32_t gIndex = ghistoryRegister & gMask;
     uint32_t pcIndex = pc & pcMask;
-    if (chooser[pcIndex] < WEAK_LOCAL) { // use global BHT with GHR
-        return globalBranchHistoryTable[gIndex];
+    if (choicePredictionTable[gIndex] < WEAK_LOCAL) { // use global BHT with GHR
+        return globalPredictionTable[gIndex] > WN;
     } else {
-        return localBranchHistoryTable[lIndex];
+        uint32_t lIndex = localBranchHistoryTable[pcIndex] & lMask;
+        return localPredictionTable[lIndex] > WN;
     };
 }
 
 void TournamentPredictor::train_predictor(uint32_t pc, uint8_t outcome) {
     // p1 is local, p2 is global
-    uint32_t gIndex = (ghistoryRegister ^ pc) & gMask;
-    uint32_t lIndex = pc & lMask;
+    uint32_t gIndex = ghistoryRegister & gMask;
     uint32_t pcIndex = pc & pcMask;
-    bool p1c = (localBranchHistoryTable[lIndex]) == outcome;
-    bool p2c = (globalBranchHistoryTable[gIndex]) == outcome;
-    if (p1c < p2c && chooser[pcIndex] != GLOBAL) {
-        chooser[pcIndex] --;
-    } else if (p1c > p2c && chooser[pcIndex] != LOCAL) {
-        chooser[pcIndex] ++;
+    uint32_t lIndex = localBranchHistoryTable[pcIndex] & lMask;
+    bool p1c = (localPredictionTable[lIndex] > WN) == bool(outcome);
+    bool p2c = (globalPredictionTable[gIndex] > WN) == bool(outcome);
+    if (p1c < p2c && choicePredictionTable[gIndex] != GLOBAL) {
+        choicePredictionTable[gIndex] --;
+    } else if (p1c > p2c && choicePredictionTable[gIndex] != LOCAL) {
+        choicePredictionTable[gIndex] ++;
     }
-    localBranchHistoryTable[lIndex] = outcome;
-    globalBranchHistoryTable[gIndex] = outcome;
+    if (outcome == TAKEN) {
+        if (globalPredictionTable[gIndex] < ST) {
+            globalPredictionTable[gIndex] ++;
+        }
+        if (localPredictionTable[lIndex] < ST) {
+            localPredictionTable[lIndex] ++;
+        }
+    } else {
+        if (globalPredictionTable[gIndex] > SN) {
+            globalPredictionTable[gIndex] --;
+        }
+        if (localPredictionTable[lIndex] > SN) {
+            localPredictionTable[lIndex] --;
+        }
+    }
+    localBranchHistoryTable[pcIndex] <<= 1;
+    localBranchHistoryTable[pcIndex] &= lMask;
+    localBranchHistoryTable[pcIndex] ^= outcome & 1;
     ghistoryRegister <<= 1;
     ghistoryRegister &= gMask;
     ghistoryRegister ^= outcome & 1;

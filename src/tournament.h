@@ -14,9 +14,10 @@ private:
     uint32_t gMask;
     uint32_t lMask;
     uint32_t pcMask;
-    std::unordered_map<uint32_t, uint8_t> chooser;
-    std::unordered_map<uint32_t, uint8_t> globalBranchHistoryTable;
-    std::unordered_map<uint32_t, uint8_t> localBranchHistoryTable;
+    uint8_t* choicePredictionTable;
+    uint8_t* globalPredictionTable;
+    uint32_t* localBranchHistoryTable;
+    uint8_t* localPredictionTable;
 public:
     TournamentPredictor(int ghb, int lhb, int pcb, int bpt, int vbs);
     uint8_t make_prediction(uint32_t pc) override;

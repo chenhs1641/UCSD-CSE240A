@@ -16,8 +16,8 @@ private:
     uint64_t gMask;
     uint32_t pcMask;
     int threshold;
-    std::unordered_map<uint32_t, std::vector<int>> functionCoefficients;
-    int vec_mul(std::vector<int> vecF);
+    std::unordered_map<uint32_t, int*> functionCoefficients;
+    int vec_mul(int* vecF);
 public:
     CustomPredictor(int ghb, int pcb, int bpt, int vbs);
     uint8_t make_prediction(uint32_t pc) override;
