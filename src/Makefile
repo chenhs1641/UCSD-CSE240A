@@ -1,14 +1,24 @@
 CC=gcc
-OPTS=-g -std=c99 -Werror
+CPP=g++
+OPTS=-g -std=c++20 -Werror
 
-all: main.o predictor.o
-	$(CC) $(OPTS) -lm -o predictor main.o predictor.o
+all: main.o predictor.o gshare.o tournament.o custom.o
+	$(CPP) $(OPTS) -lm -o predictor main.o predictor.o gshare.o tournament.o custom.o
 
-main.o: main.c predictor.h
-	$(CC) $(OPTS) -c main.c
+main.o: main.cpp predictor.h gshare.h tournament.h custom.h
+	$(CPP) $(OPTS) -c main.cpp
 
-predictor.o: predictor.h predictor.c
-	$(CC) $(OPTS) -c predictor.c
+predictor.o: predictor.cpp predictor.h
+	$(CPP) $(OPTS) -c predictor.cpp
+
+gshare.o: gshare.cpp gshare.h predictor.h
+	$(CPP) $(OPTS) -c gshare.cpp
+
+tournament.o: tournament.cpp tournament.h predictor.h
+	$(CPP) $(OPTS) -c tournament.cpp
+
+custom.o: custom.cpp custom.h predictor.h
+	$(CPP) $(OPTS) -c custom.cpp
 
 clean:
 	rm -f *.o predictor;
