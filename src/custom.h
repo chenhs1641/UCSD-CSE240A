@@ -1,25 +1,31 @@
-//========================================================//
-//  custom.h                                              //
-//  Header file for the custom Branch Predictor           //
-//========================================================//
-#include "predictor.h"
+// custom.h
 
-#define MAX_INT 10000
-#define MIN_INT -10000
+#ifndef CUSTOM_H
+#define CUSTOM_H
+
+#include "predictor.h"
+#include <vector>
+#include <cstdint>
+
+constexpr int THRESHOLD = 127;
 
 class CustomPredictor : public Predictor {
 private:
-    int ghistoryBits; // Number of bits used for Global History, also used for F
-    int pcIndexBits;  // Number of bits used for PC index
-    // self defined:
-    uint64_t ghistoryRegister;
-    uint64_t gMask;
-    uint32_t pcMask;
-    int threshold;
-    std::unordered_map<uint32_t, int*> functionCoefficients;
-    int vec_mul(int* vecF);
+    int ghistoryBits;
+    int lhistoryBits;
+    int pcIndexBits;
+    int tableSize;
+    uint32_t ghr;
+    std::vector<uint32_t> lht;
+    std::vector<std::vector<int8_t>> perceptronTable;
+    int perceptronSteps;
+
+    uint32_t HashPC(uint32_t pc);
+
 public:
-    CustomPredictor(int ghb, int pcb, int bpt, int vbs);
+    CustomPredictor(int ghb, int lhb, int pcb, int bpt, int vbs);
     uint8_t make_prediction(uint32_t pc) override;
     void train_predictor(uint32_t pc, uint8_t outcome) override;
 };
+
+#endif

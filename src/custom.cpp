@@ -1,102 +1,63 @@
-//========================================================//
-//  custom.cpp                                            //
-//  Source file for the custom Branch Predictor           //
-//========================================================//
+// custom.cpp
+
 #include "predictor.h"
 #include "custom.h"
-#include <bits/stdc++.h>
-#include <iostream>
+#include <cmath>
+#include <cstdlib>
 
-int CustomPredictor::vec_mul(int* vecF) {
-    int sum = vecF[ghistoryBits];
-    for (int i = 0; i < ghistoryBits; i ++) {
-        if ((ghistoryRegister >> i & 1) == 1) {
-            sum += vecF[i];
-        } else {
-            sum -= vecF[i];
+CustomPredictor::CustomPredictor(int ghb, int lhb, int pcb, int bpt, int vbs)
+    : Predictor::Predictor(bpt, vbs), ghistoryBits(ghb), lhistoryBits(lhb), pcIndexBits(pcb)
+{
+    tableSize = 1 << pcIndexBits;
+    ghr = 0;
+    lht = std::vector<uint32_t>(tableSize, 0);
+    perceptronTable = std::vector<std::vector<int8_t>>(tableSize, std::vector<int8_t>(ghistoryBits + lhistoryBits + 1, 0));
+}
+
+uint8_t CustomPredictor::make_prediction(uint32_t pc)
+{
+    uint32_t perceptronIndex = HashPC(pc);
+    int32_t prediction = perceptronTable[perceptronIndex][0];
+
+    for (int i = 0; i < ghistoryBits; i++) {
+        prediction += ((ghr >> i) & 1) ? perceptronTable[perceptronIndex][i + 1] : -perceptronTable[perceptronIndex][i + 1];
+    }
+
+    for (int i = 0; i < lhistoryBits; i++) {
+        prediction += ((lht[perceptronIndex] >> i) & 1) ? perceptronTable[perceptronIndex][ghistoryBits + i + 1] : -perceptronTable[perceptronIndex][ghistoryBits + i + 1];
+    }
+
+    perceptronSteps = std::abs(prediction);
+    return (prediction >= 0) ? TAKEN : NOTTAKEN;
+}
+
+void CustomPredictor::train_predictor(uint32_t pc, uint8_t outcome)
+{
+    uint32_t perceptronIndex = HashPC(pc);
+    uint8_t predDir = make_prediction(pc);
+
+    if (outcome != predDir || perceptronSteps <= THRESHOLD) {
+        int8_t updateVal = (outcome == TAKEN) ? 1 : -1;
+        perceptronTable[perceptronIndex][0] = std::clamp(static_cast<int>(perceptronTable[perceptronIndex][0]) + updateVal, -128, 127);
+
+        for (int i = 0; i < ghistoryBits; i++) {
+            bool condition = (outcome == TAKEN && ((ghr >> i) & 1)) || (outcome == NOTTAKEN && !((ghr >> i) & 1));
+            updateVal = condition ? 1 : -1;
+            perceptronTable[perceptronIndex][i + 1] = std::clamp(static_cast<int>(perceptronTable[perceptronIndex][i + 1]) + updateVal, -THRESHOLD, THRESHOLD);
+        }
+
+        for (int i = 0; i < lhistoryBits; i++) {
+            bool condition = (outcome == TAKEN && ((lht[perceptronIndex] >> i) & 1)) || (outcome == NOTTAKEN && !((lht[perceptronIndex] >> i) & 1));
+            updateVal = condition ? 1 : -1;
+            perceptronTable[perceptronIndex][ghistoryBits + i + 1] = std::clamp(static_cast<int>(perceptronTable[perceptronIndex][ghistoryBits + i + 1]) + updateVal, -THRESHOLD, THRESHOLD);
         }
     }
-    return sum;
+
+    ghr = ((ghr << 1) | (outcome == TAKEN)) & ((1 << ghistoryBits) - 1);
+    lht[perceptronIndex] = ((lht[perceptronIndex] << 1) | (outcome == TAKEN)) & ((1 << lhistoryBits) - 1);
 }
 
-CustomPredictor::CustomPredictor(int ghb, int pcb, int bpt, int vbs) : Predictor::Predictor(bpt, vbs) {
-    ghistoryBits = ghb;
-    pcIndexBits = pcb;
-    ghistoryRegister = 0;
-        gMask = 0;
-    for (int i = 0; i < ghistoryBits; i ++) {
-        gMask <<= 1;
-        gMask |= 1;
-    }
-    if (verbose == 1) {
-        std::cout<<std::hex<<gMask<<std::endl; //debug: print the gMask value
-    }
-    pcMask = 0;
-    for (int i = 0; i < pcIndexBits; i ++) {
-        pcMask <<= 1;
-        pcMask |= 1;
-    }
-    if (verbose == 1) {
-        std::cout<<std::hex<<pcMask<<std::endl; //debug: print the pcMask value
-    }
-    threshold = 0;
-}
-
-uint8_t CustomPredictor::make_prediction(uint32_t pc) {
-    uint32_t fIndex = pc & pcMask;
-    if (functionCoefficients.find(fIndex) == functionCoefficients.end()) {
-        return NOTTAKEN;
-    }
-    int* vecF = functionCoefficients[fIndex];
-    int mul = vec_mul(vecF);
-    if (mul > threshold) {
-        return TAKEN;
-    } else {
-        return NOTTAKEN;
-    }
-}
-
-void CustomPredictor::train_predictor(uint32_t pc, uint8_t outcome) {
-    uint32_t fIndex = pc & pcMask;
-    if (functionCoefficients.find(fIndex) == functionCoefficients.end()) {
-        functionCoefficients[fIndex] = new int[ghistoryBits + 1];
-        memset(functionCoefficients[fIndex], 0, (ghistoryBits + 1) * sizeof(int));
-    }
-    uint8_t pred = make_prediction(pc);
-    if (outcome != pred) {
-        if (outcome == 1) {
-            for (int i = 0; i < ghistoryBits; i ++) {
-                if ((ghistoryRegister >> i & 1) == 1) {
-                    if (functionCoefficients[fIndex][i] < MAX_INT) {
-                        functionCoefficients[fIndex][i] ++;
-                    }
-                } else {
-                    if (functionCoefficients[fIndex][i] > MIN_INT) {
-                        functionCoefficients[fIndex][i] --;
-                    }
-                }
-            }
-            if (functionCoefficients[fIndex][ghistoryBits] < MAX_INT) {
-                functionCoefficients[fIndex][ghistoryBits] ++;
-            }
-        } else {
-            for (int i = 0; i < ghistoryBits; i ++) {
-                if ((ghistoryRegister >> i & 1) == 1) {
-                    if (functionCoefficients[fIndex][i] > MIN_INT) {
-                        functionCoefficients[fIndex][i] --;
-                    }
-                } else {
-                    if (functionCoefficients[fIndex][i] < MAX_INT) {
-                        functionCoefficients[fIndex][i] ++;
-                    }
-                }
-            }
-            if (functionCoefficients[fIndex][ghistoryBits] > MIN_INT) {
-                functionCoefficients[fIndex][ghistoryBits] --;
-            }
-        }
-    }
-    ghistoryRegister <<= 1;
-    ghistoryRegister &= gMask;
-    ghistoryRegister ^= outcome & 1;
+uint32_t CustomPredictor::HashPC(uint32_t pc)
+{
+    return pc & ((1 << pcIndexBits) - 1);
 }

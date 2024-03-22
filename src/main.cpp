@@ -1,4 +1,3 @@
-
 //========================================================//
 //  CSE 240a Branch Lab                                   //
 //                                                        //
@@ -31,7 +30,7 @@ void usage() {
     fprintf(stderr,"    static\n"
                   "    gshare:<# ghistory>\n"
                   "    tournament:<# ghistory>:<# lhistory>:<# index>\n"
-                  "    custom\n");
+                  "    custom:<# ghistory>:<# lhistory>:<# index>\n");
 }
 
 // Process an option and update the predictor
@@ -48,9 +47,9 @@ int handle_option(char *arg) {
     } else if (!strncmp(arg,"--tournament:",13)) {
         bpType = TOURNAMENT;
         sscanf(arg+13,"%d:%d:%d", &ghistoryBits, &lhistoryBits, &pcIndexBits);
-    } else if (!strncmp(arg,"--custom:", 9)) {
+    } else if (!strncmp(arg,"--custom:",9)) {
         bpType = CUSTOM;
-        sscanf(arg+9,"%d:%d", &ghistoryBits, &pcIndexBits);
+        sscanf(arg+9,"%d:%d:%d", &ghistoryBits, &lhistoryBits, &pcIndexBits);
     } else if (!strcmp(arg,"--verbose")) {
         verbose = 1;
     } else {
@@ -104,7 +103,7 @@ int main(int argc, char *argv[]) {
     } else if (bpType == TOURNAMENT) {
         predictor = std::make_unique<TournamentPredictor>(ghistoryBits, lhistoryBits, pcIndexBits, bpType, verbose);
     } else if (bpType == CUSTOM) {
-        predictor = std::make_unique<CustomPredictor>(ghistoryBits, pcIndexBits, bpType, verbose);
+        predictor = std::make_unique<CustomPredictor>(ghistoryBits, lhistoryBits, pcIndexBits, bpType, verbose);
     } else {
         predictor = std::make_unique<Predictor>(bpType, verbose);
     }
@@ -119,7 +118,7 @@ int main(int argc, char *argv[]) {
         num_branches++;
 
         // Make a prediction and compare with actual outcome
-        uint8_t prediction = predictor -> make_prediction(pc);
+        uint8_t prediction = predictor->make_prediction(pc);
         if (prediction != outcome) {
             mispredictions++;
         }
@@ -128,7 +127,7 @@ int main(int argc, char *argv[]) {
         }
 
         // Train the predictor
-        predictor -> train_predictor(pc, outcome);
+        predictor->train_predictor(pc, outcome);
     }
 
     // Print out the mispredict statistics
